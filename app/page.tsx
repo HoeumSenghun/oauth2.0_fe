@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { SITE_NAME } from "@/lib/site";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description: "OAuth frontend for Google and GitHub backend integration",
+};
 
 export default function Home() {
   return (
@@ -8,7 +14,7 @@ export default function Home() {
       </h1>
       <p className="mt-4 max-w-md text-zinc-600 dark:text-zinc-400">
         OAuth frontend sample. Sign in or sign up from the navbar to connect
-        Google and GitHub
+        Google and GitHub with your backend.
       </p>
     </main>
   );

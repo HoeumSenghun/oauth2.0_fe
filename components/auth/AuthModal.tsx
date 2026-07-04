@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuthModal } from "@/components/auth/AuthModalContext";
 import { EmailAuthForm } from "@/components/auth/EmailAuthForm";
-import { startOAuth, type OAuthProvider } from "@/lib/auth";
+import { AUTH_ROUTES, type OAuthProvider } from "@/lib/auth.types";
 
 const providers: {
   id: OAuthProvider;
@@ -36,11 +38,13 @@ const providers: {
 export function AuthModal() {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
   const { activeModal, closeModal, switchToLogin, switchToSignUp } =
     useAuthModal();
 
   const isOpen = activeModal !== null;
   const isLogin = activeModal === "login";
+  const authError = searchParams.get("error");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -99,6 +103,15 @@ export function AuthModal() {
           Use your email and password, or continue with Google or GitHub.
         </p>
 
+        {authError ? (
+          <p
+            role="alert"
+            className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300"
+          >
+            Authentication failed. Please try again.
+          </p>
+        ) : null}
+
         <div className="mt-6">
           <EmailAuthForm mode={isLogin ? "login" : "signup"} />
         </div>
@@ -114,15 +127,14 @@ export function AuthModal() {
 
         <div className="space-y-3">
           {providers.map((provider) => (
-            <button
+            <Link
               key={provider.id}
-              type="button"
-              onClick={() => startOAuth(provider.id)}
+              href={AUTH_ROUTES.oauth(provider.id)}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
             >
               {provider.icon}
               {provider.label}
-            </button>
+            </Link>
           ))}
         </div>
 

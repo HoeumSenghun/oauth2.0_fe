@@ -2,14 +2,11 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthSession } from "@/components/auth/AuthSessionContext";
-import { startLogout } from "@/lib/auth";
+import { logoutAction } from "@/app/actions/auth";
 
 export function UserMenu() {
-  const router = useRouter();
-  const { signOut } = useAuthSession();
   const [open, setOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,11 +20,10 @@ export function UserMenu() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  function handleLogout() {
+  async function handleLogout() {
+    setIsPending(true);
     setOpen(false);
-    signOut();
-    router.replace("/");
-    startLogout();
+    await logoutAction();
   }
 
   return (
@@ -36,6 +32,7 @@ export function UserMenu() {
         type="button"
         aria-label="Account menu"
         aria-expanded={open}
+        aria-haspopup="menu"
         onClick={() => setOpen((value) => !value)}
         className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 text-zinc-700 transition hover:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
@@ -53,9 +50,13 @@ export function UserMenu() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-950">
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-50 mt-2 min-w-40 rounded-xl border border-zinc-200 bg-white p-2 shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+        >
           <Link
             href="/dashboard"
+            role="menuitem"
             onClick={() => setOpen(false)}
             className="block rounded-lg px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
           >
@@ -63,10 +64,12 @@ export function UserMenu() {
           </Link>
           <button
             type="button"
+            role="menuitem"
+            disabled={isPending}
             onClick={handleLogout}
-            className="block w-full rounded-lg px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+            className="block w-full rounded-lg px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 disabled:opacity-60 dark:text-zinc-300 dark:hover:bg-zinc-900"
           >
-            Log out
+            {isPending ? "Signing out..." : "Log out"}
           </button>
         </div>
       ) : null}

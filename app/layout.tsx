@@ -14,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Web OAuth",
-  description: "OAuth frontend for Google and GitHub backend integration",
+  title: {
+    default: "Web OAuth",
+    template: "%s | Web OAuth",
+  },
+  description: "Production-ready OAuth frontend for Google and GitHub backend integration",
 };
 
 export default function RootLayout({
