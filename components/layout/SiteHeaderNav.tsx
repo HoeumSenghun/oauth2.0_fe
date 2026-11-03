@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useAuthModal } from "@/components/auth/AuthModalContext";
 import { UserMenu } from "@/components/auth/UserMenu";
+import type { CurrentUser } from "@/lib/auth.types";
 import { SITE_NAME } from "@/lib/site";
 
 type SiteHeaderNavProps = {
   isSignedIn: boolean;
+  user: CurrentUser | null;
 };
 
-export function SiteHeaderNav({ isSignedIn }: SiteHeaderNavProps) {
+export function SiteHeaderNav({ isSignedIn, user }: SiteHeaderNavProps) {
   const { openLogin, openSignUp } = useAuthModal();
 
   return (
@@ -24,7 +26,7 @@ export function SiteHeaderNav({ isSignedIn }: SiteHeaderNavProps) {
         
         <div className="flex items-center gap-2">
           {isSignedIn ? (
-            <UserMenu />
+            <UserMenu user={user} />
           ) : (
             <>
               <button

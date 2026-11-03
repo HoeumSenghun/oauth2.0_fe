@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuthModal } from "@/components/auth/AuthModalContext";
@@ -90,7 +89,7 @@ export function AuthModal() {
           aria-label="Close dialog"
           className="absolute right-4 top-4 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
         >
-          ×
+          x
         </button>
 
         <h2
@@ -127,14 +126,14 @@ export function AuthModal() {
 
         <div className="space-y-3">
           {providers.map((provider) => (
-            <Link
+            <a
               key={provider.id}
               href={AUTH_ROUTES.oauth(provider.id)}
               className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white text-sm font-medium text-zinc-900 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
             >
               {provider.icon}
               {provider.label}
-            </Link>
+            </a>
           ))}
         </div>
 

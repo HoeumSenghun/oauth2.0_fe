@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const meResponse = await backendFetch("/auth/me");
+  const meResponse = await backendFetch("/api/auth/me", {
+    headers: { cookie: request.headers.get("cookie") ?? "" },
+  });
 
   if (meResponse.ok) {
     await setSessionCookie();

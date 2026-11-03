@@ -5,6 +5,19 @@ export type AuthActionState = {
   error?: string;
 };
 
+export type CurrentUser = {
+  id: number;
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+  role: string;
+};
+
+export function displayName(user: Pick<CurrentUser, "name" | "email">): string {
+  const name = user.name?.trim();
+  return name || user.email;
+}
+
 export const AUTH_ROUTES = {
   login: "/api/auth/login",
   register: "/api/auth/register",

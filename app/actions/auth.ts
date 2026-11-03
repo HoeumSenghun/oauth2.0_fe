@@ -1,26 +1,42 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { backendFetch, getLogoutUrl } from "@/lib/auth.server";
+import { env } from "@/lib/env";
 import type { AuthActionState } from "@/lib/auth.types";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
 
+// A server-to-server fetch's Set-Cookie response header is never relayed to
+// the real browser automatically (unlike a browser-initiated redirect/fetch).
+// The backend's access_token/refresh_token cookies have to be re-set here by
+// hand, or the browser never actually receives a working backend session.
 async function persistSessionFromResponse(response: Response): Promise<void> {
   if (!response.ok) {
     return;
   }
 
-  try {
-    const data = (await response.clone().json()) as {
-      token?: string;
-      session?: string;
-    };
-
-    await setSessionCookie(data.token ?? data.session ?? "1");
-    return;
-  } catch {
-    await setSessionCookie();
+  const cookieStore = await cookies();
+  for (const setCookieHeader of response.headers.getSetCookie()) {
+    const [nameValue] = setCookieHeader.split(";");
+    const separatorIndex = nameValue.indexOf("=");
+    if (separatorIndex === -1) {
+      continue;
+    }
+    const name = nameValue.slice(0, separatorIndex).trim();
+    const value = nameValue.slice(separatorIndex + 1).trim();
+    if (!name || !value) {
+      continue;
+    }
+    cookieStore.set(name, value, {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      secure: env.isProduction,
+    });
   }
+
+  await setSessionCookie();
 }
 
 export async function loginAction(
@@ -34,7 +50,7 @@ export async function loginAction(
     return { error: "Email and password are required." };
   }
 
-  const response = await backendFetch("/auth/login", {
+  const response = await backendFetch("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
@@ -63,7 +79,7 @@ export async function registerAction(
     return { error: "Passwords do not match." };
   }
 
-  const response = await backendFetch("/auth/register", {
+  const response = await backendFetch("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });

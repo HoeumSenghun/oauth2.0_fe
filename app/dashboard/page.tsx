@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { UserAvatar } from "@/components/auth/UserAvatar";
+import { displayName } from "@/lib/auth.types";
 import { getCurrentUser } from "@/lib/auth.server";
 import { hasSession } from "@/lib/session";
 
@@ -20,15 +22,25 @@ export default async function DashboardPage() {
       <h1 className="text-3xl font-semibold text-zinc-900 dark:text-zinc-50">
         Dashboard
       </h1>
-      <p className="mt-4 text-zinc-600 dark:text-zinc-400">
-        You are signed in. Replace this with data from your OAuth backend.
-      </p>
-
       {user ? (
-        <pre className="mt-8 overflow-x-auto rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
-          {JSON.stringify(user, null, 2)}
-        </pre>
-      ) : null}
+        <div className="mt-8 flex items-center gap-4">
+          <UserAvatar
+            name={displayName(user)}
+            avatarUrl={user.avatarUrl}
+            size="lg"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-xl font-medium text-zinc-900 dark:text-zinc-50">
+              {displayName(user)}
+            </p>
+            <p className="truncate text-sm text-zinc-500">{user.email}</p>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 text-zinc-600 dark:text-zinc-400">
+          Signed in, but the profile could not be loaded.
+        </p>
+      )}
     </main>
   );
 }

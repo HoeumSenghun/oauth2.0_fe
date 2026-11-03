@@ -1,20 +1,21 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { env } from "@/lib/env";
-import type { EmailAuthMode, OAuthProvider } from "@/lib/auth.types";
+import type { CurrentUser, EmailAuthMode, OAuthProvider } from "@/lib/auth.types";
 
 export function getOAuthUrl(provider: OAuthProvider): string {
-  return `${env.API_URL}/auth/${provider}`;
+  return `${env.API_URL}/oauth2/authorization/${provider}`;
 }
 
 export function getEmailAuthUrl(mode: EmailAuthMode): string {
   return mode === "login"
-    ? `${env.API_URL}/auth/login`
-    : `${env.API_URL}/auth/register`;
+    ? `${env.API_URL}/api/auth/login`
+    : `${env.API_URL}/api/auth/register`;
 }
 
 export function getLogoutUrl(): string {
-  return `${env.API_URL}/auth/logout`;
+  return `${env.API_URL}/api/auth/logout`;
 }
 
 export async function backendFetch(
@@ -31,12 +32,33 @@ export async function backendFetch(
   });
 }
 
-export async function getCurrentUser(): Promise<Record<string, unknown> | null> {
-  const response = await backendFetch("/auth/me");
+function isCurrentUser(value: unknown): value is CurrentUser {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const user = value as Record<string, unknown>;
+  return (
+    typeof user.email === "string" &&
+    (user.name === null || typeof user.name === "string") &&
+    (user.avatarUrl === null || typeof user.avatarUrl === "string")
+  );
+}
+
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const cookieStore = await cookies();
+  const cookie = cookieStore
+    .getAll()
+    .map((entry) => `${entry.name}=${entry.value}`)
+    .join("; ");
+  const response = await backendFetch("/api/auth/me", {
+    headers: cookie ? { cookie } : {},
+  });
 
   if (!response.ok) {
     return null;
   }
 
-  return response.json();
+  const body: unknown = await response.json();
+  return isCurrentUser(body) ? body : null;
 }
