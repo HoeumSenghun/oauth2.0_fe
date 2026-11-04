@@ -1,0 +1,12 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Required so Netlify runs Next.js (App Router, Server Actions, proxy, API routes)
+# instead of treating the site as static files.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
