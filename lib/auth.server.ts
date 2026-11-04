@@ -4,6 +4,12 @@ import { cookies } from "next/headers";
 import { env } from "@/lib/env";
 import type { CurrentUser, EmailAuthMode, OAuthProvider } from "@/lib/auth.types";
 
+/**
+ * Start Spring OAuth2 login.
+ * Do NOT pass redirect_uri here — Google/GitHub must use the backend callback:
+ *   https://oauth2-0-be.onrender.com/login/oauth2/code/{provider}
+ * Backend should redirect the browser to NEXT_PUBLIC_APP_URL/auth/callback after success.
+ */
 export function getOAuthUrl(provider: OAuthProvider): string {
   return `${env.API_URL}/oauth2/authorization/${provider}`;
 }
