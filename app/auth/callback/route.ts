@@ -23,13 +23,21 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const meResponse = await backendFetch("/api/auth/me", {
-    headers: { cookie: request.headers.get("cookie") ?? "" },
-  });
+  try {
+    const meResponse = await backendFetch("/api/auth/me", {
+      headers: { cookie: request.headers.get("cookie") ?? "" },
+    });
 
-  if (meResponse.ok) {
-    await setSessionCookie();
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    if (meResponse.ok) {
+      await setSessionCookie();
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  } catch (err) {
+    console.error("auth/callback: backend unreachable", err);
+    const loginUrl = new URL("/", request.url);
+    loginUrl.searchParams.set("auth", "login");
+    loginUrl.searchParams.set("error", "backend_unavailable");
+    return NextResponse.redirect(loginUrl);
   }
 
   const loginUrl = new URL("/", request.url);

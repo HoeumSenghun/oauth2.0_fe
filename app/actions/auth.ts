@@ -2,10 +2,13 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { backendFetch, getLogoutUrl } from "@/lib/auth.server";
+import { backendFetch, fetchWithTimeout, getLogoutUrl } from "@/lib/auth.server";
 import { env } from "@/lib/env";
 import type { AuthActionState } from "@/lib/auth.types";
 import { clearSessionCookie, setSessionCookie } from "@/lib/session";
+
+const SERVICE_UNAVAILABLE_ERROR =
+  "Service temporarily unavailable. Please try again in a moment.";
 
 // A server-to-server fetch's Set-Cookie response header is never relayed to
 // the real browser automatically (unlike a browser-initiated redirect/fetch).
@@ -50,10 +53,15 @@ export async function loginAction(
     return { error: "Email and password are required." };
   }
 
-  const response = await backendFetch("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  let response: Response;
+  try {
+    response = await backendFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    return { error: SERVICE_UNAVAILABLE_ERROR };
+  }
 
   if (!response.ok) {
     return { error: "Sign in failed. Check your email and password." };
@@ -79,10 +87,15 @@ export async function registerAction(
     return { error: "Passwords do not match." };
   }
 
-  const response = await backendFetch("/api/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  let response: Response;
+  try {
+    response = await backendFetch("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  } catch {
+    return { error: SERVICE_UNAVAILABLE_ERROR };
+  }
 
   if (!response.ok) {
     return { error: "Sign up failed. Please try again." };
@@ -94,9 +107,10 @@ export async function registerAction(
 
 export async function logoutAction(): Promise<void> {
   try {
-    await fetch(getLogoutUrl(), { method: "POST", cache: "no-store" });
+    await fetchWithTimeout(getLogoutUrl(), { method: "POST", cache: "no-store" });
   } catch {
-    // Backend may be unavailable during local development.
+    // Backend may be unavailable or slow to respond — logout still proceeds
+    // locally below, since clearing our own session cookie never depends on it.
   }
 
   await clearSessionCookie();

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getLogoutUrl } from "@/lib/auth.server";
+import { fetchWithTimeout, getLogoutUrl } from "@/lib/auth.server";
 import { clearSessionCookie } from "@/lib/session";
 
 export async function POST(request: Request) {
   try {
-    await fetch(getLogoutUrl(), { method: "POST", cache: "no-store" });
+    await fetchWithTimeout(getLogoutUrl(), { method: "POST", cache: "no-store" });
   } catch {
-    // Allow local logout even if backend is down.
+    // Allow logout even if the backend is down or slow to respond.
   }
 
   await clearSessionCookie();

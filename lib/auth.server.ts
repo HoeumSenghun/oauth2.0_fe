@@ -4,6 +4,27 @@ import { cookies } from "next/headers";
 import { env } from "@/lib/env";
 import type { CurrentUser, EmailAuthMode, OAuthProvider } from "@/lib/auth.types";
 
+// Render's free tier can cold-start in 30-50s+. Routes that call the backend
+// (Server Actions, Route Handlers) run inside platform functions with their
+// own hard execution limits, so every outbound call needs its own bound —
+// otherwise a slow/unreachable backend hangs the caller indefinitely instead
+// of failing fast with a message the UI can show.
+const BACKEND_TIMEOUT_MS = 8000;
+
+export async function fetchWithTimeout(
+  url: string,
+  init?: RequestInit,
+  timeoutMs = BACKEND_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
  * Start Spring OAuth2 login.
  * Do NOT pass redirect_uri here — Google/GitHub must use the backend callback:
@@ -28,7 +49,7 @@ export async function backendFetch(
   path: string,
   init?: RequestInit,
 ): Promise<Response> {
-  return fetch(`${env.API_URL}${path}`, {
+  return fetchWithTimeout(`${env.API_URL}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -57,9 +78,21 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     .getAll()
     .map((entry) => `${entry.name}=${entry.value}`)
     .join("; ");
-  const response = await backendFetch("/api/auth/me", {
-    headers: cookie ? { cookie } : {},
-  });
+
+  // Never let a slow/unreachable backend take down every page that renders
+  // the header (SiteShell calls this on every request). Treat any failure
+  // the same as "could not verify" rather than crashing or hanging — this
+  // only withholds profile data, it never grants access (hasSession() is
+  // the actual gate, and it's a pure cookie check unaffected by the backend).
+  let response: Response;
+  try {
+    response = await backendFetch("/api/auth/me", {
+      headers: cookie ? { cookie } : {},
+    });
+  } catch (error) {
+    console.error("getCurrentUser: backend unreachable", error);
+    return null;
+  }
 
   if (!response.ok) {
     return null;

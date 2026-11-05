@@ -7,7 +7,7 @@ function isProtectedPath(pathname: string): boolean {
   return pathname.startsWith("/dashboard");
 }
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
   const hasSession = Boolean(
     request.cookies.get(env.SESSION_COOKIE)?.value,
