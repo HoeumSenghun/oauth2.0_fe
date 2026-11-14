@@ -2,10 +2,11 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { backendFetch, fetchWithTimeout, getLogoutUrl } from "@/lib/auth.server";
+import { backendFetch } from "@/lib/auth.server";
 import { env } from "@/lib/env";
 import type { AuthActionState } from "@/lib/auth.types";
-import { clearSessionCookie, setSessionCookie } from "@/lib/session";
+import { performLogout } from "@/lib/logout";
+import { setSessionCookie } from "@/lib/session";
 
 const SERVICE_UNAVAILABLE_ERROR =
   "Service temporarily unavailable. Please try again in a moment.";
@@ -106,13 +107,14 @@ export async function registerAction(
 }
 
 export async function logoutAction(): Promise<void> {
-  try {
-    await fetchWithTimeout(getLogoutUrl(), { method: "POST", cache: "no-store" });
-  } catch {
-    // Backend may be unavailable or slow to respond — logout still proceeds
-    // locally below, since clearing our own session cookie never depends on it.
+  const result = await performLogout();
+
+  if (!result.backendRevoked) {
+    // Local cookies are already cleared. Do not treat this as a successful
+    // server-side token revocation — the backend may still hold a refresh token
+    // until it is reachable again.
+    console.warn("logoutAction: backend logout did not complete; local session cleared");
   }
 
-  await clearSessionCookie();
   redirect("/");
 }
